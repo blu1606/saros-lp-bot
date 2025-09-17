@@ -35,27 +35,46 @@ document.addEventListener('DOMContentLoaded', async function() {
 // Load network settings from bot
 async function loadNetworkSettings(userId) {
     try {
-        if (!userId) {
-            console.log('No user ID, using default mainnet');
-            updateNetworkDisplay('mainnet');
-            return;
-        }
-
-        const response = await fetch(`/api/network/${userId}`);
-        const data = await response.json();
+        // Try to get network from Telegram initData first
+        const initDataUnsafe = tg.initDataUnsafe;
+        let defaultNetwork = 'mainnet'; // fallback
         
-        console.log('Network settings loaded:', data);
-        updateNetworkDisplay(data.network);
+        // Check if we can get network preference from URL params or stored data
+        const urlParams = new URLSearchParams(window.location.search);
+        const networkParam = urlParams.get('network');
+        
+        if (networkParam && (networkParam === 'mainnet' || networkParam === 'devnet')) {
+            defaultNetwork = networkParam;
+            console.log('Network from URL params:', defaultNetwork);
+        } else {
+            // Try to fetch from server (if available)
+            try {
+                const response = await fetch(`/api/network/${userId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    defaultNetwork = data.network;
+                    console.log('Network from server:', defaultNetwork);
+                } else {
+                    console.log('Server not available, using default:', defaultNetwork);
+                }
+            } catch (serverError) {
+                console.log('Cannot reach server, using default network:', defaultNetwork);
+            }
+        }
+        
+        updateNetworkDisplay(defaultNetwork);
         
         // Store for later use
-        window.currentNetwork = data.network;
-        window.currentRpcUrl = data.rpcUrl;
+        window.currentNetwork = defaultNetwork;
+        window.currentRpcUrl = defaultNetwork === 'devnet' 
+            ? 'https://api.devnet.solana.com'
+            : 'https://api.mainnet-beta.solana.com';
         
     } catch (error) {
         console.error('Failed to load network settings:', error);
-        updateNetworkDisplay('mainnet'); // fallback
-        window.currentNetwork = 'mainnet';
-        window.currentRpcUrl = 'https://api.mainnet-beta.solana.com';
+        updateNetworkDisplay('devnet'); // Default to devnet for testing
+        window.currentNetwork = 'devnet';
+        window.currentRpcUrl = 'https://api.devnet.solana.com';
     }
 }
 
