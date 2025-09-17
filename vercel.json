@@ -8,16 +8,8 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
       "src": "/(.*)",
       "dest": "/webapp/$1"
     }
-  ],
-  "env": {
-    "WEBAPP_URL": "@webapp_url",
-    "TELEGRAM_BOT_TOKEN": "@telegram_bot_token"
-  }
+  ]
 }
